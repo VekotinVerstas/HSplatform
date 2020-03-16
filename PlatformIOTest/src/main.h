@@ -25,6 +25,7 @@ enum task
   read_weather_davis,
   read_external_volt,
   restart,
+  read_victron,
   MAX_TASK_COUNT // Do not assign values manually and this must be last
 };
 

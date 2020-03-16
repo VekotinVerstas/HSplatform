@@ -1,13 +1,19 @@
 #include <Arduino.h>
 #include "hsvictron.h"
 #include "main.h"
-
+// Plus vieressä lähetys tx (ruskea)
+// Miinus vieressä RX ohjaus (valkoinen)
 int setupVictron()
 {
 #ifdef READ_VICTRON_ENABLED
     Serial1.begin(19200, SERIAL_8N1, 13, 2); // Victron
     pinMode(14, OUTPUT);    // sets the digital pin 14 as output ( victron load on/off )
-    digitalWrite(14, HIGH); // Should read from eeprom 
+    //while(true){
+    digitalWrite(14, LOW); // sets the digital pin 13 off
+    //delay(10000);            // waits for a second
+    //digitalWrite(14, LOW);  // sets the digital pin 13 off
+    //delay(10000); 
+    //}
     Serial.println("Using Serial1 for ESP to Victorn communication.");
     Serial1.setTimeout(100);
     return (0);
@@ -29,6 +35,11 @@ int readVictron()
 {
   //The device transmits blocks of data at 1 second intervals. Each field is sent using the following format:
   // Serial.setTimeout(); // ms default 1000
+  DataOut.victronData.msg_type=read_victron;
+  DataOut.victronData.msg_ver=0;
+  DataOut.victronData.mainVoltage_V = floatFromBuffer("1234");
+  //DataOut.victronData.mainVoltage_V=12.34;
+  DataOut.victronData.panelVoltage_VPV=56.78;
   String label, val;
   while(Serial1.available()) {
        Serial1.read(); // read old buffers away
@@ -48,7 +59,9 @@ int readVictron()
      if (label =="V") {
          DataOut.victronData.mainVoltage_V = floatFromBuffer(val);
          Serial.print("Main voltage: ");
-         Serial.println(val);
+         Serial.print(val);
+         Serial.print(" float: ");
+         Serial.println(DataOut.victronData.mainVoltage_V);
      }
      else if (label =="VPV") {
          DataOut.victronData.panelVoltage_VPV = floatFromBuffer(val);

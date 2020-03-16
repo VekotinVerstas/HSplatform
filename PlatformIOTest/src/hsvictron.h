@@ -24,7 +24,6 @@ struct t_VictronDATA {
   int stateOfOperation_CS;
 };
 
- //measurement status = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 #endif //READ_VICTORN_ENABLED
 
 #endif // HSVICTORN_H

@@ -22,16 +22,28 @@ void do_send(osjob_t* j) {
   if (LMIC.opmode & OP_TXRXPEND) {
     Serial.println(F("OP_TXRXPEND, not sending"));
   } else {
-    //unsigned char text[]={"test"};
-    //LMIC_setTxData2(1, (xref2u1_t)text, 5, 0);
-    LMIC_setTxData2(1, (unsigned char *)&DataOut, sizeof(DataOut), 0);
+/*
+    int size = sizeof(DataOut);
+    // declare send buffer (char byte array)
+    unsigned char *sendData = new unsigned char[size];
+    // copy current configuration (struct) to send buffer
+    memcpy(sendData, &DataOut, size);
+    LMIC_setTxData2(1, sendData, size-1, 0); // send data unconfirmed on RCMD Port
+    delete sendData; // free memory
+*/
 
     // Print data to serial 
     //Serial.write((byte*)&DataOut, sizeof(DataOut));
-    const char* dp = (const char*) &DataOut;
+    xref2u1_t dp = (xref2u1_t) &DataOut;
     for (int i = 0; i < sizeof(DataOut); i++) Serial.printf("%02x", *dp++);
     Serial.println();
     Serial.println("do_send viesti jonossa");
+
+    //unsigned char text[]={"test"};
+    //LMIC_setTxData2(1, (xref2u1_t)text, 5, 0);
+    LMIC_setTxData2(1, (unsigned char *)&DataOut, sizeof(DataOut), 0);
+    //LMIC_setTxData2(1, dp, sizeof(DataOut), 0);
+
   }
   // Next TX is scheduled after TX_COMPLETE event.
 }
@@ -88,11 +100,11 @@ void onEvent (ev_t ev) {
       LMIC.dataLen = 0;
 
       #ifdef READ_VICTRON_ENABLED
-      if( lora_response[0]=='o' ) {
-        digitalWrite(13, HIGH);
-      }
-      else if( lora_response[0]=='f' ) {
+      if( lora_response[0]=='o' && lora_response[1]=='n' ) {
         digitalWrite(13, LOW);
+      }
+      else if( lora_response[0]=='o' && lora_response[1]=='f'  ) {
+        digitalWrite(13, HIGH);
       }
       else if( lora_response[0]=='r' ) {
         ESP.restart();
