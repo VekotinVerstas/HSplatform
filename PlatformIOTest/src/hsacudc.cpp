@@ -1,41 +1,10 @@
 #include <Arduino.h>
 #include "hsacudc.h"
 #include "main.h"
-// Plus vieressä lähetys tx (ruskea)
-// Miinus vieressä RX ohjaus (valkoinen)
-int setupAcuDC()
-{
-#ifdef READ_ACUDC
-    Serial1.begin(19200, SERIAL_8N1, 13, 2); // Victron
-    pinMode(14, OUTPUT);    // sets the digital pin 14 as output ( victron load on/off )
-    //while(true){
-    digitalWrite(14, LOW); // sets the digital pin 13 off
-    //delay(10000);            // waits for a second
-    //digitalWrite(14, LOW);  // sets the digital pin 13 off
-    //delay(10000); 
-    //}
-    Serial.println("Using Serial1 for ESP to Victorn communication.");
-    Serial1.setTimeout(100);
-    return (0);
-#endif
-    return (-1);
-}
-char buf2[80];
-
-float floatFromBuffer2(String val) {
- val.toCharArray(buf2, sizeof(buf2));
- return atof(buf2);
-}
-int intFromBuffer2(String val) {
- val.toCharArray(buf2, sizeof(buf2));
- return atoi(buf2);
-}
-
 #include <ModbusMaster.h>
 #define RXD2 34 //13
 #define TXD2 19//15
 #define RXenable 22//14
-
 // instantiate ModbusMaster object
 ModbusMaster node;
 
@@ -47,17 +16,20 @@ void postTransmission() {
   digitalWrite(RXenable, LOW);
 }
 
-void modbusSetup() {
-  Serial2.begin(19200, SERIAL_8N1, RXD2, TXD2);
-  pinMode(RXenable, OUTPUT);
-  digitalWrite(RXenable, LOW);
-
-  // Modbus slave ID 1
-  node.begin(2, Serial2);
-
-  // Callbacks allow us to configure the RS485 transceiver correctly
-  node.preTransmission(preTransmission);
-  node.postTransmission(postTransmission);
+int setupAcuDC()
+{
+#ifdef READ_ACUDC
+    Serial2.begin(19200, SERIAL_8N1, RXD2, TXD2);
+    pinMode(RXenable, OUTPUT);
+    digitalWrite(RXenable, LOW);
+    // Modbus slave ID 1
+    node.begin(2, Serial2);
+    // Callbacks allow us to configure the RS485 transceiver correctly
+    node.preTransmission(preTransmission);
+    node.postTransmission(postTransmission);
+    return (0);
+#endif
+    return (-1);
 }
 
 float modbusReadFloat(uint16_t addr) {
@@ -105,6 +77,14 @@ int readAcuDC()
   DataOut.acudcData.amp = modbusReadFloat(0x0202)*10;
   DataOut.acudcData.watt = modbusReadFloat(0x0204)*10;
   DataOut.acudcData.runTime = modbusReadRunTime()*10;
+  Serial.print( "AcuDC volt: ");
+  Serial.println(DataOut.acudcData.volt);
+  Serial.print( "AcuDC amp: ");
+  Serial.println(DataOut.acudcData.amp);
+  Serial.print( "AcuDC watt: ");
+  Serial.println(DataOut.acudcData.watt);
+  Serial.print( "AcuDC runtime: ");
+  Serial.println(DataOut.acudcData.runTime);
   
   #endif
   return(0);

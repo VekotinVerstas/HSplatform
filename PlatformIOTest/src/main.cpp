@@ -245,6 +245,11 @@ void setup()
   setupVictron();
 #endif                                      //READ_WEATHER_DAVIS_8_ENABLED
 
+#ifdef READ_ACUDC
+#include "hsacudc.h"
+  setupAcuDC();
+#endif     
+
   hslora_setup();
 }
 
@@ -380,6 +385,9 @@ void loop()
 */
       //LMIC_setTxData2(1, (unsigned char *)&externalVoltageData, sizeof(externalVoltageData), 0);
 #endif
+#ifdef READ_ACUDC
+    readAcuDC();
+#endif //READ__ENABLED
 
       //LMIC_setTxData2(2, STATICMSG, sizeof(STATICMSG), 0);
       Serial.println("do_send");
