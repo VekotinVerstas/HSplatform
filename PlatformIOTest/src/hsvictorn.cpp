@@ -33,6 +33,7 @@ int intFromBuffer(String val) {
 
 int readVictron()
 {
+  #ifdef READ_VICTRON_ENABLED
   //The device transmits blocks of data at 1 second intervals. Each field is sent using the following format:
   // Serial.setTimeout(); // ms default 1000
   DataOut.victronData.msg_type=read_victron;
@@ -115,5 +116,6 @@ int readVictron()
      }
 
    }
+   #endif
    return(0);
 }

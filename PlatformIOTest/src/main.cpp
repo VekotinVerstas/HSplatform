@@ -93,6 +93,8 @@ bool connectWifi()
 }
 #endif // WIFI_REQUIRED
 
+#include "hsacudc.h"
+
 //END OF TASK  SPECIFIC DEFINITIONS
 
 void printLocalTime()

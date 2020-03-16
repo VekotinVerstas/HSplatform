@@ -1,7 +1,6 @@
 #ifndef TASKSDEFINE_H
 #define TASKSDEFINE_H
 
-#include "tasksdefine.h"
 #define SLEEP_ENABLED // do we sleep in the end of loop
 #define DEBUG_ENABLED // debug print
 #undef DEVICE_SCAN_WIFI_0_ENABLED
@@ -14,7 +13,8 @@
 #undef SYNCRONIZE_NTP_TIME_7_ENABLED
 #undef READ_WEATHER_DAVIS_8_ENABLED
 #undef READ_EXTERNAL_VOLTAGE_9_ENABLED
-#define READ_VICTRON_ENABLED
+#undef READ_VICTRON_ENABLED
+#define READ_ACUDC
 #undef RESTART_10_ENABLED
 
 #endif

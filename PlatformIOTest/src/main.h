@@ -3,6 +3,7 @@
 
 #include "hsdavis.h"
 #include "hsvictron.h"
+#include "hsacudc.h"
 extern bool clear_to_sleep; // LoRa send can prevent sleep
 extern RTC_DATA_ATTR byte bootCount;
 
@@ -25,7 +26,8 @@ enum task
   read_weather_davis,
   read_external_volt,
   restart,
-  read_victron,
+  read_victron,  // Solar panel controller via serial
+  read_acudc, // DC Power ( solar bench / solar bike charger ) via modbus RS428 
   MAX_TASK_COUNT // Do not assign values manually and this must be last
 };
 
@@ -41,6 +43,7 @@ struct t_EXTERNAL_VOLTAGE_OUT
 
 struct DATA_OUT
 {
+
 #ifdef READ_WEATHER_DAVIS_8_ENABLED
 t_DavisDATA davisData; // Add Davis data packet
 #endif // READ_WEATHER_DAVIS_8_ENABLED
@@ -53,6 +56,11 @@ t_VictronDATA victronData;
 #ifdef READ_EXTERNAL_VOLTAGE_9_ENABLED
 t_EXTERNAL_VOLTAGE_OUT externalVoltageData;  // Add external volltage data packet
 #endif // READ_EXTERNAL_VOLTAGE_9_ENABLE
+
+#ifdef READ_ACUDC
+t_AcudcDATA acudcData;
+#endif
+
 };
 
 extern struct DATA_OUT DataOut; // result in static memory
