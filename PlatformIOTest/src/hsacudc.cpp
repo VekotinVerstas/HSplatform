@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#ifdef READ_ACUDC
 #include "hsacudc.h"
 #include "main.h"
 #include <ModbusMaster.h>
@@ -14,22 +15,6 @@ void preTransmission() {
 
 void postTransmission() {
   digitalWrite(RXenable, LOW);
-}
-
-int setupAcuDC()
-{
-#ifdef READ_ACUDC
-    Serial2.begin(19200, SERIAL_8N1, RXD2, TXD2);
-    pinMode(RXenable, OUTPUT);
-    digitalWrite(RXenable, LOW);
-    // Modbus slave ID 1
-    node.begin(2, Serial2);
-    // Callbacks allow us to configure the RS485 transceiver correctly
-    node.preTransmission(preTransmission);
-    node.postTransmission(postTransmission);
-    return (0);
-#endif
-    return (-1);
 }
 
 float modbusReadFloat(uint16_t addr) {
@@ -64,6 +49,24 @@ uint32_t modbusReadRunTime() {
     return (0);
   }
   return ((uint32_t)node.getResponseBuffer(0) << 16) | node.getResponseBuffer(1);
+}
+
+#endif
+
+int setupAcuDC()
+{
+#ifdef READ_ACUDC
+    Serial2.begin(19200, SERIAL_8N1, RXD2, TXD2);
+    pinMode(RXenable, OUTPUT);
+    digitalWrite(RXenable, LOW);
+    // Modbus slave ID 1
+    node.begin(2, Serial2);
+    // Callbacks allow us to configure the RS485 transceiver correctly
+    node.preTransmission(preTransmission);
+    node.postTransmission(postTransmission);
+    return (0);
+#endif
+    return (-1);
 }
 
 int readAcuDC()
