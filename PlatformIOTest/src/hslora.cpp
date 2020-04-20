@@ -176,7 +176,7 @@ void hslora_setup()
 
         // Set data rate and transmit power (note: txpow seems to be ignored by the library)
         //LMIC_setDrTxpow(DR_SF12, 14);
-        LMIC_setDrTxpow(DR_SF12, 14);
+        LMIC_setDrTxpow(DR_SF11, 14);
 
         // Start job
         //do_send(&sendjob);
