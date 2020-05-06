@@ -34,6 +34,7 @@ int readDavis()
 {
 #ifdef READ_WEATHER_DAVIS_8_ENABLED
     char buffer[100];
+    uint32_t serialStartTime = millis();
     //t_DavisDATA davisData;
     Serial.println("Reading loop1 data from Davis.");
     Serial1.println(); // Wake up Davis
@@ -41,6 +42,7 @@ int readDavis()
     while (Serial1.available())
     { // If anything comes in Serial1
         Serial1.read(); // Dump unknown data
+        if( millis()- serialStartTime > 2000) break;
     }
     Serial1.println("LOOP 1"); // Request data from Davis
     delay(100);
@@ -82,14 +84,13 @@ int readDavis()
             Serial.printf("%s = %u\n", "Tuulen nopeus", DataOut.davisData.yWindSpeed);
             Serial.println("************************");
             Serial.flush();
+            if( millis()- serialStartTime > 10000) break;
         }
         return (0);
     }
-    else
-        DataOut.davisData.msg_type = read_weather_davis;
-        DataOut.davisData.msg_ver = -1; // Invalid not uptodate data
-        Serial.println("No aswer from Davis");
-
+    DataOut.davisData.msg_type = read_weather_davis;
+    DataOut.davisData.msg_ver = -1; // Invalid not uptodate data
+    Serial.println("No aswer from Davis");
 #endif
     return (-1);
 }
