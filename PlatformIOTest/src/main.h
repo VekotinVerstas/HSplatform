@@ -3,7 +3,7 @@
 
 #include "hsdavis.h"
 #include "hsvictron.h"
-#include "hsacudc.h"
+
 extern bool clear_to_sleep; // LoRa send can prevent sleep
 extern RTC_DATA_ATTR byte bootCount;
 

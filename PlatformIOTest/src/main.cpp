@@ -1,35 +1,15 @@
 #include <Arduino.h>
 // tässä määritellään mitkä taskit käytössä
 #include "settings.h"
-#include "main.h"
 #include <esp_system.h>
 #include <esp_bt.h>
 #include <esp_bt_main.h>
 #include <esp_bt_device.h>
 
-bool clear_to_sleep = true; // LoRa send can prevent sleep
-struct DATA_OUT DataOut; // result in static memory
-
-// next start time of each task, initiated in startup
-RTC_DATA_ATTR time_t next_run_time[MAX_TASK_COUNT];
-RTC_DATA_ATTR byte bootCount = 0;
-//RTC_DATA_ATTR uint64_t Mics = 0;
-
-#define UNDEFINED_TIME -1
-
+#include "hsacudc.h"
 #include "hslora.h"
-
-#ifdef READ_TEMP_HUM_BME280_5_ENABLED
-#include <hsbme280.h>
-HSbme280 HSBME280Sensor;
-RTC_DATA_ATTR HSbme280Data HSBME280SensorData;
-#endif //READ_TEMP_HUM_BME280_5_ENABLED
-
-#ifdef READ_HTU21D_6_ENABLED
-#include <hshtu21d.h>
-HShtu21d HShtu21dSensor;
-RTC_DATA_ATTR HShtu21dData HSHTU21DSensorData;
-#endif //READ_HTU21D_6_ENABLED
+#include "hsmqtt.h"
+#include "main.h"
 
 #if defined(SEND_DATA_WIFI_3_ENABLED) || defined(OTA_UPDATE_4_ENABLED) || defined(SYNCRONIZE_NTP_TIME_7_ENABLED)
 #define WIFI_REQUIRED
@@ -42,7 +22,30 @@ RTC_DATA_ATTR HShtu21dData HSHTU21DSensorData;
 #include <WiFiMulti.h>
 #include <WiFiType.h>
 WiFiMulti wifiMulti;
+
 #endif //WIFI_REQUIRED
+
+bool clear_to_sleep = true; // LoRa send can prevent sleep
+struct DATA_OUT DataOut; // result in static memory
+
+// next start time of each task, initiated in startup
+RTC_DATA_ATTR time_t next_run_time[MAX_TASK_COUNT];
+RTC_DATA_ATTR byte bootCount = 0;
+//RTC_DATA_ATTR uint64_t Mics = 0;
+
+#define UNDEFINED_TIME -1
+
+#ifdef READ_TEMP_HUM_BME280_5_ENABLED
+#include <hsbme280.h>
+HSbme280 HSBME280Sensor;
+RTC_DATA_ATTR HSbme280Data HSBME280SensorData;
+#endif //READ_TEMP_HUM_BME280_5_ENABLED
+
+#ifdef READ_HTU21D_6_ENABLED
+#include <hshtu21d.h>
+HShtu21d HShtu21dSensor;
+RTC_DATA_ATTR HShtu21dData HSHTU21DSensorData;
+#endif //READ_HTU21D_6_ENABLED
 
 #ifdef OTA_UPDATE_4_ENABLED
 #include "HSOTA.H"                 // tässä viittaus tiedostoon, jossa  ota-päivitykseen liittyvät funktiot
@@ -235,6 +238,10 @@ void setup()
 #endif
   }
 
+#ifdef SEND_DATA_WIFI_3_ENABLED
+mqttsetup();
+#endif                                      //SEND_DATA_WIFI_3_ENABLED
+
 #ifdef READ_WEATHER_DAVIS_8_ENABLED
 #include "hsdavis.h"
   setupDavis();
@@ -264,19 +271,8 @@ void loop()
   if (time_to_run_task(task::syncronize_ntp_time))
   {
     //connect to WiFi
-    int wifiCounter = 0;
     bool connected = connectWifi();
-
-    while (!connected)
-    {
-      delay(500);
-      Serial.print(".");
-      if (++wifiCounter > 30)
-      {
-        Serial.println("NTP unable to connect via WiFi.");
-        break;
-      }
-    }
+    
     if (connected)
     {
       Serial.println(" CONNECTED");
@@ -405,10 +401,22 @@ void loop()
 #endif //SEND_DATA_LORA_2_ENABLED
 
 #ifdef SEND_DATA_WIFI_3_ENABLED
+  //mqttloop(); // Listen incoming mqtt
   //next_run_time[send_data_wifi] voidaan asettaa halutuksi (->0) esim. sensorin luvun yhteydessä jos halutaan lähettää heti tuore tieto wifillä
   if (time_to_run_task(send_data_wifi))
   {
-    //  tee paketti (json?) ja lähetä sensoridata wifillä
+   //connect to WiFi
+    bool connected = connectWifi();
+    
+    if (connected)
+    {
+      Serial.println("WIFI CONNECTED");
+      mqttsend("Davis/data", (const char *)&DataOut);
+    }
+    else
+    {
+      Serial.println("Cannot connect wifi!");
+    }
   }
 #endif //SEND_DATA_WIFI_3_ENABLED
 

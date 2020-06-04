@@ -13,7 +13,7 @@
 #define SDA_PIN 21
 
 // next start time of each task is in array in non-volatile memory
-extern const unsigned TX_INTERVAL = 60; // LoRa send interval in seconds.
+extern const unsigned TX_INTERVAL = 90; // LoRa send interval in seconds.
 // Airtime counter https://www.loratools.nl/#/airtime
 
 // These settings seems to work with TTGO LORA OLED
@@ -30,5 +30,5 @@ const lmic_pinmap lmic_pins = {
 #define EXTERNAL_VOLTAGE_9_GPIO 34
 #define EXTERNAL_VOLTAGE_9_FACTOR 17.368
 
-#define RESTART_INTERVAL 86400
+#define RESTART_INTERVAL 3600
 #endif //SETTINGS_H
