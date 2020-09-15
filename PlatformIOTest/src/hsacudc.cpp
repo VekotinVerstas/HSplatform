@@ -1,3 +1,4 @@
+#include "tasksdefine.h"
 #include <Arduino.h>
 #ifdef READ_ACUDC
 #include "hsacudc.h"
@@ -23,15 +24,23 @@ float modbusReadFloat(uint16_t addr) {
   float val;
 
   result = node.readHoldingRegisters(addr, 2);
-  if (result != node.ku8MBSuccess) {
+  if (result != node.ku8MBSuccess) 
+  {
+    Serial.print("Modbus address ");
+    Serial.print(addr);
+    Serial.print(" read failed");
     if ( result == 0x2e ) {
-      Serial.println("Modbus read failed: Timeout");
+      Serial.println(": Timeout");
+      //return(-1);
+      ESP.restart();
     }
-    else {
-      Serial.print("Modbus read failed: ");
+    else 
+    {
+      Serial.print(": Error ");
       Serial.println(result, HEX);
+      //return (-1);
+      ESP.restart();
     }
-    return (-1);
   }
 
   data[0] = node.getResponseBuffer(1);
@@ -40,15 +49,30 @@ float modbusReadFloat(uint16_t addr) {
   return (val);
 }
 
-uint32_t modbusReadRunTime() {
+uint32_t modbusReadUint32(uint16_t addr) 
+{
   uint8_t result;
-  result = node.readHoldingRegisters(0x0280, 2);
-  if (result != node.ku8MBSuccess) {
-    Serial.print("Modbus read failed: ");
-    Serial.println(result, HEX);
-    return (0);
+  
+  result = node.readHoldingRegisters(addr, 4);
+  if (result != node.ku8MBSuccess) 
+  {
+    Serial.print("Modbus address ");
+    Serial.print(addr);
+    Serial.print(" read failed");
+    if ( result == 0x2e ) {
+      Serial.println(": Timeout");
+      //return(-1);
+      ESP.restart();
+    }
+    else 
+    {
+      Serial.print(": Error ");
+      Serial.println(result, HEX);
+      //return (-1);
+      ESP.restart();
+    }
   }
-  return ((uint32_t)node.getResponseBuffer(0) << 16) | node.getResponseBuffer(1);
+  return (((long)node.getResponseBuffer(0))<<16 ) | (node.getResponseBuffer(1));
 }
 
 #endif
@@ -74,12 +98,25 @@ int readAcuDC()
   #ifdef READ_ACUDC
   //The device transmits blocks of data at 1 second intervals. Each field is sent using the following format:
   // Serial.setTimeout(); // ms default 1000
+  
+  /* Clear AcuDC data
+  node.writeSingleCoil(290,0xA0);
+  node.writeSingleCoil(291,0xA0);
+  node.writeSingleCoil(292,0xA0);
+  node.writeSingleCoil(295,0xA0);
+  node.writeSingleCoil(296,0xA0);
+  node.writeSingleCoil(297,0xA0);*/
+
   DataOut.acudcData.msg_type=0x3a;
   DataOut.acudcData.msg_ver=0x2C;
-  DataOut.acudcData.volt = modbusReadFloat(0x0200)*10;
-  DataOut.acudcData.amp = modbusReadFloat(0x0202)*10;
-  DataOut.acudcData.watt = modbusReadFloat(0x0204)*10;
-  DataOut.acudcData.runTime = modbusReadRunTime()*10;
+  DataOut.acudcData.volt = modbusReadFloat(0x0200);
+  DataOut.acudcData.amp = modbusReadFloat(0x0202);
+  DataOut.acudcData.watt = modbusReadFloat(0x0204)*1000;
+  DataOut.acudcData.runTime = modbusReadUint32(0x0280);
+  DataOut.acudcData.inAh = modbusReadUint32(0x0308);
+  DataOut.acudcData.outAh = modbusReadUint32(0x030A);
+  DataOut.acudcData.inEnergy = modbusReadUint32(0x0300);
+  DataOut.acudcData.outEnergy = modbusReadUint32(0x0302);
   Serial.print( "AcuDC volt: ");
   Serial.println(DataOut.acudcData.volt);
   Serial.print( "AcuDC amp: ");
@@ -88,6 +125,14 @@ int readAcuDC()
   Serial.println(DataOut.acudcData.watt);
   Serial.print( "AcuDC runtime: ");
   Serial.println(DataOut.acudcData.runTime);
+  Serial.print( "AcuDC inAh: ");
+  Serial.println(DataOut.acudcData.inAh);
+  Serial.print( "AcuDC outAh: ");
+  Serial.println(DataOut.acudcData.outAh);
+  Serial.print( "AcuDC inEnergy: ");
+  Serial.println(DataOut.acudcData.inEnergy);
+  Serial.print( "AcuDC outEnergy: ");
+  Serial.println(DataOut.acudcData.outEnergy);
   
   #endif
   return(0);

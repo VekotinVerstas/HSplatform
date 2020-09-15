@@ -9,10 +9,14 @@ int readAcuDC();
 struct t_AcudcDATA { 
   uint8_t msg_type;
   uint8_t msg_ver;
-  uint16_t volt;
-  uint16_t amp;
-  uint16_t watt;
-  uint16_t runTime;
+  float volt;
+  float amp;
+  float watt;
+  uint32_t runTime;
+  uint32_t inEnergy;
+  uint32_t outEnergy;
+  uint32_t inAh;
+  uint32_t outAh;
 };
 
 #endif //READ_ACUDC
