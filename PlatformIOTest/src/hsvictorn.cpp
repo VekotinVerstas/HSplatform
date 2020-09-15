@@ -1,8 +1,19 @@
 #include <Arduino.h>
 #include "hsvictron.h"
 #include "main.h"
-// Plus vieressä lähetys tx (ruskea)
-// Miinus vieressä RX ohjaus (valkoinen)
+
+/* 
+VE.Direct pinout and spec
+TX RX communication in RS232 levels ( adapter to needed TTL level is needed )
+____=____
+|1 2 3 4|  ( as seen in controller )
+---------
+1 = GND White
+2 = RX  Yellow
+3 = TX  Black
+4 = 5V ( max 10mA and 20mA in short burst ) Red
+*/
+
 int setupVictron()
 {
 #ifdef READ_VICTRON_ENABLED
