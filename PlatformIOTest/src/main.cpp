@@ -11,7 +11,7 @@
 #include "hsmqtt.h"
 #include "main.h"
 
-#if defined(SEND_DATA_WIFI_3_ENABLED) || defined(OTA_UPDATE_4_ENABLED) || defined(SYNCRONIZE_NTP_TIME_7_ENABLED)
+#if defined(SEND_DATA_WIFI_3_ENABLED) || defined(OTA_ENABLED) || defined(SYNCRONIZE_NTP_TIME_7_ENABLED)
 #define WIFI_REQUIRED
 #endif
 
@@ -22,6 +22,7 @@
 #include <WiFiMulti.h>
 #include <WiFiType.h>
 WiFiMulti wifiMulti;
+bool softAPconnected=false;
 
 #endif //WIFI_REQUIRED
 
@@ -30,7 +31,7 @@ struct DATA_OUT DataOut; // result in static memory
 
 // next start time of each task, initiated in startup
 RTC_DATA_ATTR time_t next_run_time[MAX_TASK_COUNT];
-RTC_DATA_ATTR byte bootCount = 0;
+RTC_DATA_ATTR byte bootCount = 0; // This is going to overflow
 //RTC_DATA_ATTR uint64_t Mics = 0;
 
 #define UNDEFINED_TIME -1
@@ -47,11 +48,9 @@ HShtu21d HShtu21dSensor;
 RTC_DATA_ATTR HShtu21dData HSHTU21DSensorData;
 #endif //READ_HTU21D_6_ENABLED
 
-#ifdef OTA_UPDATE_4_ENABLED
-#include "HSOTA.H"                 // tässä viittaus tiedostoon, jossa  ota-päivitykseen liittyvät funktiot
-#define OTA_UPDATE_INTERVAL_MIN 15 // Wifi ota update is tried this often, suurin osa on turhia yrityksiä, mutta jos joku odottaa hotspot-kännykän kanssa updatea on odottavan aika pitkä. Jos tätä tarvetta ei ole voisi olla vaikka 1 vrk välein
-next_run_time[ota_update] = 0;
-#endif //OTA_UPDATE_4_ENABLED
+#ifdef OTA_ENABLED
+#include "hsota.h"                 // tässä viittaus tiedostoon, jossa  ota-päivitykseen liittyvät funktiot
+#endif //OTA_ENABLED
 
 #include "hsdavis.h" //READ_WEATHER_DAVIS_8_ENABLED
 
@@ -70,7 +69,11 @@ const char *ntpServer = "pool.ntp.org";
 #ifdef WIFI_REQUIRED
 bool connectWifi()
 {
-  if (wifiMulti.run() == WL_CONNECTED)
+  if (softAPconnected )
+  {
+    return false; // softap not really connected
+  }
+  if( wifiMulti.run() == WL_CONNECTED )
   {
     return true; // already connected
   }
@@ -88,9 +91,32 @@ bool connectWifi()
   Serial.println("Connecting Wifi...");
   if (wifiMulti.run() == WL_CONNECTED)
   {
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
+    Serial.println("WiFi connected!");
+    IPAddress local = WiFi.localIP();
+    IPAddress gatew = WiFi.gatewayIP();
+
+    Serial.printf( (char *)"Connected to:    %s\n", WiFi.SSID().c_str());
+    Serial.printf( (char *)"Signal strength: %ddBm\n", WiFi.RSSI());
+    Serial.printf( (char *)"Local IP:        %d.%d.%d.%d\n", local[0], local[1], local[2], local[3]);
+    Serial.printf( (char *)"Gateway IP:      %d.%d.%d.%d\n", gatew[0], gatew[1], gatew[2], gatew[3]);
     return true;
+  }
+  Serial.print("Setting AP (Access Point)…");
+  // Remove the password parameter, if you want the AP (Access Point) to be open
+  if( WiFi.softAP(softAPname, softAPpw) )
+  {
+    IPAddress IP = WiFi.softAPIP();
+    Serial.print("Soft AP IP address: ");
+    Serial.println(IP);
+    // Print ESP8266 Local IP Address
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+    softAPconnected = true;
+  }
+  else 
+  {
+    Serial.println("Unable to create local AP. Restarting...");
+    ESP.restart();
   }
   return false;
 }
@@ -135,7 +161,12 @@ bool time_to_run_task(int task_number)
   }
   else
   {
-    Serial.printf("Task %d is due after %ld secs \n", task_number, next_run_time[task_number] - now);
+    //Print status only every 10secs
+    if((next_run_time[task_number] - now)%10==0)
+    {
+      Serial.printf("Task %d is due after %ld secs \n", task_number, next_run_time[task_number] - now);
+      //delay(400);
+    }
     return false;
   }
 };
@@ -205,17 +236,18 @@ time_t time_of_earliest_run() // loop all tasks and return earliest run time
       next_task_to_run = i;
     }
   }
-  if (earliest_run_time == UNDEFINED_TIME)
+  if (earliest_run_time == LONG_MAX)
   {
     time_t now_l;
     time(&now_l);
     earliest_run_time = now_l + MIN_SLEEPING_TIME_SECS;
-    Serial.printf("earliest_run_time =MIN_SLEEPING_TIME_SECS \n");
+    //Serial.printf("earliest_run_time =MIN_SLEEPING_TIME_SECS \n");
   }
-  Serial.printf("earliest_run_time %ld, task %d\n", earliest_run_time, next_task_to_run);
+  //Serial.printf("earliest_run_time %ld, task %d\n", earliest_run_time, next_task_to_run);
   return earliest_run_time;
 }
 
+/********** SETUP **********/
 void setup()
 {
   Serial.begin(115200);
@@ -255,13 +287,23 @@ mqttsetup();
 #ifdef READ_ACUDC
 #include "hsacudc.h"
   setupAcuDC();
+#endif
+#if defined(OTA_ENABLED) && defined(WIFI_REQUIRED) 
+//connect to WiFi
+bool connected = connectWifi();
 #endif     
-
+  hsota_setup();
   hslora_setup();
 }
 
+/********* LOOP **********/
 void loop()
 {
+#ifdef WIFI_REQUIRED
+//connect to WiFi
+bool connected = connectWifi();
+#endif
+
 #ifdef SEND_DATA_LORA_2_ENABLED
   os_runloop_once();
 #endif
@@ -270,12 +312,8 @@ void loop()
   // Tämä viedään myöhemmin omaan luokkaan HSTimeSync
   if (time_to_run_task(task::syncronize_ntp_time))
   {
-    //connect to WiFi
-    bool connected = connectWifi();
-    
-    if (connected)
+  if (connected)
     {
-      Serial.println(" CONNECTED");
       //init and get the time
       //configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
       configTime(0, 0, ntpServer);
@@ -357,17 +395,16 @@ void loop()
     }
     else
     {
-      // Prepare upstream data transmission at the next possible time.
-// TODO: Kun tulee  paketteja, niin koostetaan koko paketti bufferiin
-#ifdef READ_WEATHER_DAVIS_8_ENABLED
-    readDavis();
+    // Prepare upstream data transmission at the next possible time.
+    #ifdef READ_WEATHER_DAVIS_8_ENABLED
+      readDavis();
       //LMIC_setTxData2(2, (unsigned char *)&LoraOut, sizeof(LoraOut), 0);
-#endif //READ_WEATHER_DAVIS_8_ENABLED
-#ifdef READ_VICTRON_ENABLED
-    readVictron();
+    #endif //READ_WEATHER_DAVIS_8_ENABLED
+    #ifdef READ_VICTRON_ENABLED
+      readVictron();
       //LMIC_svicetTxData2(2, (unsigned char *)&LoraOut, sizeof(LoraOut), 0);
-#endif //READ__ENABLED
-#ifdef READ_EXTERNAL_VOLTAGE_9_ENABLED
+    #endif //READ__ENABLED
+    #ifdef READ_EXTERNAL_VOLTAGE_9_ENABLED
       DataOut.externalVoltageData.msg_type = 9;
       DataOut.externalVoltageData.msg_ver = 0;
       Serial.printf("Sending voltage: %f\n", DataOut.externalVoltageData.voltage);
@@ -378,22 +415,22 @@ void loop()
       {
         Serial.printf("%02X", buffer[i]);
       }   
-*/
+      */
       //LMIC_setTxData2(1, (unsigned char *)&externalVoltageData, sizeof(externalVoltageData), 0);
-#endif
-#ifdef READ_ACUDC
-    readAcuDC();
-#endif //READ__ENABLED
+    #endif
+    #ifdef READ_ACUDC
+      readAcuDC();
+    #endif //READ__ENABLED
 
-      //LMIC_setTxData2(2, STATICMSG, sizeof(STATICMSG), 0);
-      Serial.println("do_send");
-      do_send(&sendjob);
-      Serial.println("Packet queued!");
-      clear_to_sleep = false;                         // do not sleep before the message is send
-      //next_run_time[task::send_data_lora] = LONG_MAX; // unschedule for now ( not to repeat send )
-      /* EV_TXCOMPLETE in hslora shedules next task, but if TX fails shedule it also in here */
-      Serial.printf("Backup shedule next LoRa send in %d seconds\n", TX_INTERVAL);
-      schedule_next_task_run(send_data_lora, TX_INTERVAL, false);
+    //LMIC_setTxData2(2, STATICMSG, sizeof(STATICMSG), 0);
+    /* Serial.println("do_send");
+    do_send(&sendjob);
+    Serial.println("Packet queued!");
+    clear_to_sleep = false;                         // do not sleep before the message is send
+    //next_run_time[task::send_data_lora] = LONG_MAX; // unschedule for now ( not to repeat send )
+    /* EV_TXCOMPLETE in hslora shedules next task, but if TX fails shedule it also in here */
+    Serial.printf("Backup shedule next LoRa send in %d seconds\n", TX_INTERVAL);
+    schedule_next_task_run(send_data_lora, TX_INTERVAL, false);
     }
 
     // Next TX is scheduled after TX_COMPLETE event.
@@ -405,32 +442,24 @@ void loop()
   //next_run_time[send_data_wifi] voidaan asettaa halutuksi (->0) esim. sensorin luvun yhteydessä jos halutaan lähettää heti tuore tieto wifillä
   if (time_to_run_task(send_data_wifi))
   {
-   //connect to WiFi
-    bool connected = connectWifi();
-    
-    if (connected)
-    {
-      Serial.println("WIFI CONNECTED");
-      mqttsend("Davis/data", (const char *)&DataOut);
-    }
-    else
-    {
-      Serial.println("Cannot connect wifi!");
-    }
+  if (connected)
+  {
+    mqttsend("Davis/data", (const char *)&DataOut);
+  }
+  else
+  {
+    Serial.println("Cannot connect wifi!");
   }
 #endif //SEND_DATA_WIFI_3_ENABLED
 
-#ifdef OTA_UPDATE_4_ENABLED
-  if (time_to_run_task(task::ota_update))
-  {
-    // kokeile päivitystä, samalla voisi myös hakea kellonajan kun ollaan wifissä, päivitysfunktiot omassa filessä
-  }
-#endif //OTA_UPDATE_4_ENABLED
+#ifdef OTA_ENABLED
+  hsota_loop();
+#endif //OTA_ENABLED
 
 #ifdef WIFI_REQUIRED
   // close wifi here is still open
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
+//  WiFi.disconnect(true);
+//  WiFi.mode(WIFI_OFF);
 #endif //WIFI_REQUIRED
 
 #ifdef SEND_DATA_LORA_2_ENABLED
@@ -456,10 +485,10 @@ void loop()
   }
 #endif
 
-  //These are used with or without sleep
-  time_t now_local;
-  time(&now_local);
-  int64_t time_to_next_run = (time_of_earliest_run() - now_local);
+//These are used with or without sleep
+time_t now_local;
+time(&now_local);
+time_t time_to_next_run = (time_of_earliest_run() - now_local);
 
 #ifdef SLEEP_ENABLED
 
@@ -496,6 +525,7 @@ void loop()
       // Serial.printf("%ld\t %d\n",(millis() - wait_start_ms),(time_to_next_run * 1000));
     }
   }
+/* Do work if not sleeping
 #else // no SLEEP_ENABLED
   Serial.printf("No Sleep enabled - waiting %ld sec\n", (long)time_to_next_run);
   unsigned long wait_start_ms = millis();
@@ -505,6 +535,6 @@ void loop()
     os_runloop_once();
 #endif
     delay(90);
-  }
-#endif // SLEEP_ENABLED
+  }*/
+#endif // SLEEP_ENABLED 
 }
