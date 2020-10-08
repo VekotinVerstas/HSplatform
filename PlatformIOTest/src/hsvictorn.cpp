@@ -17,7 +17,7 @@ ____=____
 int setupVictron()
 {
 #ifdef READ_VICTRON_ENABLED
-    Serial1.begin(19200, SERIAL_8N1, 13, 2); // Victron
+    Serial1.begin(19200, SERIAL_8N1, 13, 14); //rx,tx Victron
     pinMode(14, OUTPUT);    // sets the digital pin 14 as output ( victron load on/off )
     //while(true){
     digitalWrite(14, LOW); // sets the digital pin 13 off
