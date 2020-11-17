@@ -31,6 +31,7 @@ struct DATA_OUT DataOut; // result in static memory
 
 // next start time of each task, initiated in startup
 RTC_DATA_ATTR time_t next_run_time[MAX_TASK_COUNT];
+bool printStatus[MAX_TASK_COUNT];
 RTC_DATA_ATTR byte bootCount = 0; // This is going to overflow
 //RTC_DATA_ATTR uint64_t Mics = 0;
 
@@ -95,10 +96,10 @@ bool connectWifi()
     IPAddress local = WiFi.localIP();
     IPAddress gatew = WiFi.gatewayIP();
 
-    Serial.printf( (char *)"Connected to:    %s\n", WiFi.SSID().c_str());
-    Serial.printf( (char *)"Signal strength: %ddBm\n", WiFi.RSSI());
-    Serial.printf( (char *)"Local IP:        %d.%d.%d.%d\n", local[0], local[1], local[2], local[3]);
-    Serial.printf( (char *)"Gateway IP:      %d.%d.%d.%d\n", gatew[0], gatew[1], gatew[2], gatew[3]);
+    Serial.printf( (char *)"Connected to:    %s\r\n", WiFi.SSID().c_str());
+    Serial.printf( (char *)"Signal strength: %ddBm\r\n", WiFi.RSSI());
+    Serial.printf( (char *)"Local IP:        %d.%d.%d.%d\r\n", local[0], local[1], local[2], local[3]);
+    Serial.printf( (char *)"Gateway IP:      %d.%d.%d.%d\r\n", gatew[0], gatew[1], gatew[2], gatew[3]);
     return true;
   }
   Serial.print("Setting AP (Access Point)…");
@@ -132,7 +133,7 @@ void printLocalTime()
   time(&now);
   struct tm *timeinfo;
   timeinfo = localtime(&now);
-  Serial.printf("%s\n", asctime(timeinfo));
+  Serial.printf("%s\r\n", asctime(timeinfo));
   delay(2); // 26 bytes @ 115200 baud is less than 2 ms
 }
 /*
@@ -156,7 +157,7 @@ bool time_to_run_task(int task_number)
   time(&now);
   if ((next_run_time[task_number] <= now))
   {
-    Serial.printf("Task %d was due %ld secs ago (now %ld, due %ld)\n", task_number, now - next_run_time[task_number], now, next_run_time[task_number]);
+    Serial.printf("Task %d was due %ld secs ago (now %ld, due %ld)\r\n", task_number, now - next_run_time[task_number], now, next_run_time[task_number]);
     return true;
   }
   else
@@ -164,9 +165,13 @@ bool time_to_run_task(int task_number)
     //Print status only every 10secs
     if((next_run_time[task_number] - now)%10==0)
     {
-      Serial.printf("Task %d is due after %ld secs \n", task_number, next_run_time[task_number] - now);
-      //delay(400);
+      if(printStatus[task_number])
+      {
+      Serial.printf("Task %d is due after %ld secs\r\n", task_number, next_run_time[task_number] - now);
+      printStatus[task_number]=false;
+      }
     }
+    else printStatus[task_number]=true;
     return false;
   }
 };
@@ -241,9 +246,9 @@ time_t time_of_earliest_run() // loop all tasks and return earliest run time
     time_t now_l;
     time(&now_l);
     earliest_run_time = now_l + MIN_SLEEPING_TIME_SECS;
-    //Serial.printf("earliest_run_time =MIN_SLEEPING_TIME_SECS \n");
+    //Serial.printf("earliest_run_time =MIN_SLEEPING_TIME_SECS \r\n");
   }
-  //Serial.printf("earliest_run_time %ld, task %d\n", earliest_run_time, next_task_to_run);
+  //Serial.printf("earliest_run_time %ld, task %d\r\n", earliest_run_time, next_task_to_run);
   return earliest_run_time;
 }
 
@@ -252,7 +257,7 @@ void setup()
 {
   Serial.begin(115200);
   delay(20);
-  Serial.printf("\n%s - versio: %s %s\n", name, version, __DATE__);
+  Serial.printf("\r\n%s - versio: %s %s\r\n", name, version, __DATE__);
   Serial.print("bootCount:");
   Serial.println(bootCount);
   printLocalTime();
@@ -304,6 +309,10 @@ void loop()
 bool connected = connectWifi();
 #endif
 
+#ifdef OTA_ENABLED
+  hsota_loop();
+#endif //OTA_ENABLED
+
 #ifdef SEND_DATA_LORA_2_ENABLED
   os_runloop_once();
 #endif
@@ -343,13 +352,13 @@ bool connected = connectWifi();
 #ifdef READ_TEMP_HUM_BME280_5_ENABLED
 
   HSBME280SensorData = HSBME280Sensor.read_sensor_values();
-  Serial.printf("BME280 temperature %f, humidity %f, pressure %f\n", HSBME280SensorData.temperature, HSBME280SensorData.humidity, HSBME280SensorData.pressure);
+  Serial.printf("BME280 temperature %f, humidity %f, pressure %f\r\n", HSBME280SensorData.temperature, HSBME280SensorData.humidity, HSBME280SensorData.pressure);
   delay(10000); // toistaiseksi näin
 #endif          //READ_TEMP_HUM_BME280_5_ENABLED
 
 #ifdef READ_HTU21D_6_ENABLED
   HSHTU21DSensorData = HShtu21dSensor.read_sensor_values();
-  Serial.printf("HTU temperature %f, humidity %f, dew point %f\n", HSHTU21DSensorData.temperature, HSHTU21DSensorData.humidity, dewPoint(HSHTU21DSensorData.humidity, HSHTU21DSensorData.temperature));
+  Serial.printf("HTU temperature %f, humidity %f, dew point %f\r\n", HSHTU21DSensorData.temperature, HSHTU21DSensorData.humidity, dewPoint(HSHTU21DSensorData.humidity, HSHTU21DSensorData.temperature));
   delay(10000); // toistaiseksi näin
 #endif          //READ_HTU21D_6_ENABLED
 
@@ -371,7 +380,7 @@ bool connected = connectWifi();
     //val3 = analogRead(EXTERNAL_VOLTAGE_9_GPIO);
 
     DataOut.externalVoltageData.voltage = (float)(((val1)*EXTERNAL_VOLTAGE_9_FACTOR) / 4095);
-    Serial.printf("External volttage: %.2f\n", DataOut.externalVoltageData.voltage);
+    Serial.printf("External volttage: %.2f\r\n", DataOut.externalVoltageData.voltage);
     schedule_next_task_run(read_external_volt, TX_INTERVAL, false); // same interval as lora
   }
 #endif //READ_EXTERNAL_VOLTAGE_9_ENABLED
@@ -407,7 +416,7 @@ bool connected = connectWifi();
     #ifdef READ_EXTERNAL_VOLTAGE_9_ENABLED
       DataOut.externalVoltageData.msg_type = 9;
       DataOut.externalVoltageData.msg_ver = 0;
-      Serial.printf("Sending voltage: %f\n", DataOut.externalVoltageData.voltage);
+      Serial.printf("Sending voltage: %f\r\n", DataOut.externalVoltageData.voltage);
       /*
       char buffer[8];
       memcpy( buffer, &voltageOut, 8 );
@@ -419,7 +428,19 @@ bool connected = connectWifi();
       //LMIC_setTxData2(1, (unsigned char *)&externalVoltageData, sizeof(externalVoltageData), 0);
     #endif
     #ifdef READ_ACUDC
-      readAcuDC();
+      if( readAcuDC() < 0 )
+        {
+          Serial.println("AcuDC read fail. Reboot OTA delay pahse.");
+          for(int i=0; i<120; i++)
+            { // give time for OTA update and reboot
+            #ifdef OTA_ENABLED
+              hsota_loop();
+            #endif //OTA_ENABLED
+            delay(200);
+            }
+          Serial.println("Reboot AcuDC read fail.");
+          ESP.restart();
+        }
     #endif //READ__ENABLED
 
     //LMIC_setTxData2(2, STATICMSG, sizeof(STATICMSG), 0);
@@ -429,7 +450,7 @@ bool connected = connectWifi();
     clear_to_sleep = false;                         // do not sleep before the message is send
     //next_run_time[task::send_data_lora] = LONG_MAX; // unschedule for now ( not to repeat send )
     /* EV_TXCOMPLETE in hslora shedules next task, but if TX fails shedule it also in here */
-    Serial.printf("Backup shedule next LoRa send in %d seconds\n", TX_INTERVAL);
+    Serial.printf("Backup shedule next LoRa send in %d seconds\r\n", TX_INTERVAL);
     schedule_next_task_run(send_data_lora, TX_INTERVAL, false);
     }
 
@@ -452,10 +473,6 @@ bool connected = connectWifi();
   }
 #endif //SEND_DATA_WIFI_3_ENABLED
 
-#ifdef OTA_ENABLED
-  hsota_loop();
-#endif //OTA_ENABLED
-
 #ifdef WIFI_REQUIRED
   // close wifi here is still open
 //  WiFi.disconnect(true);
@@ -466,6 +483,10 @@ bool connected = connectWifi();
   // do it once anyway here
   os_runloop_once();
 #endif
+
+#ifdef OTA_ENABLED
+  hsota_loop();
+#endif //OTA_ENABLED
 
 #ifdef RESTART_10_ENABLED
   //RESTART_INTERVAL 86400
@@ -506,7 +527,7 @@ time_t time_to_next_run = (time_of_earliest_run() - now_local);
       time_to_next_run = MAX_SLEEPING_TIME_SECS; // do not sleep too long even there is nothing to execute
     }
     bootCount++;
-    Serial.printf("Sleeping %d seconds\n", (int)time_to_next_run);
+    Serial.printf("Sleeping %d seconds\r\n", (int)time_to_next_run);
     uint64_t sleeptime = (time_to_next_run * 1000000);
     esp_sleep_enable_timer_wakeup(sleeptime);
     esp_deep_sleep_start();
@@ -514,7 +535,7 @@ time_t time_to_next_run = (time_of_earliest_run() - now_local);
   else
   {
     // just relax, but do not   sleep
-    Serial.printf("Waiting %d seconds\n", (int)time_to_next_run);
+    Serial.printf("Waiting %d seconds\r\n", (int)time_to_next_run);
     unsigned long wait_start_ms = millis();
     while ((millis() - wait_start_ms) < (time_to_next_run * 1000))
     {
@@ -522,12 +543,12 @@ time_t time_to_next_run = (time_of_earliest_run() - now_local);
       os_runloop_once();
 #endif
       delay(100); // Do slicly less actively notihing ;)
-      // Serial.printf("%ld\t %d\n",(millis() - wait_start_ms),(time_to_next_run * 1000));
+      // Serial.printf("%ld\t %d\r\n",(millis() - wait_start_ms),(time_to_next_run * 1000));
     }
   }
 /* Do work if not sleeping
 #else // no SLEEP_ENABLED
-  Serial.printf("No Sleep enabled - waiting %ld sec\n", (long)time_to_next_run);
+  Serial.printf("No Sleep enabled - waiting %ld sec\r\n", (long)time_to_next_run);
   unsigned long wait_start_ms = millis();
   while ((millis() - wait_start_ms) <= (time_to_next_run * 1000))
   {
