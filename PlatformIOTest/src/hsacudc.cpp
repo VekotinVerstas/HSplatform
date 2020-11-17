@@ -9,6 +9,7 @@
 #define RXenable 22//14
 // instantiate ModbusMaster object
 ModbusMaster node;
+bool readOk=true;
 
 void preTransmission() {
   digitalWrite(RXenable, HIGH);
@@ -31,16 +32,17 @@ float modbusReadFloat(uint16_t addr) {
     Serial.print(" read failed");
     if ( result == 0x2e ) {
       Serial.println(": Timeout");
-      //return(-1);
-      ESP.restart();
+      readOk=false;
+      return(0);
+
     }
     else 
     {
       Serial.print(": Error ");
       Serial.println(result, HEX);
-      //return (-1);
-      ESP.restart();
-    }
+      readOk=false;
+      return(0);
+     }
   }
 
   data[0] = node.getResponseBuffer(1);
@@ -61,15 +63,15 @@ uint32_t modbusReadUint32(uint16_t addr)
     Serial.print(" read failed");
     if ( result == 0x2e ) {
       Serial.println(": Timeout");
-      //return(-1);
-      ESP.restart();
+      readOk = false;
+      return(0);
     }
     else 
     {
       Serial.print(": Error ");
       Serial.println(result, HEX);
-      //return (-1);
-      ESP.restart();
+      readOk = false;
+      return (0);
     }
   }
   return (((long)node.getResponseBuffer(0))<<16 ) | (node.getResponseBuffer(1));
@@ -80,10 +82,11 @@ uint32_t modbusReadUint32(uint16_t addr)
 int setupAcuDC()
 {
 #ifdef READ_ACUDC
-    Serial2.begin(19200, SERIAL_8N1, RXD2, TXD2);
+    //Serial2.begin(19200, SERIAL_8N1, RXD2, TXD2);
+    Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
     pinMode(RXenable, OUTPUT);
     digitalWrite(RXenable, LOW);
-    // Modbus slave ID 1
+    // Modbus slave ID 2
     node.begin(2, Serial2);
     // Callbacks allow us to configure the RS485 transceiver correctly
     node.preTransmission(preTransmission);
@@ -106,6 +109,11 @@ int readAcuDC()
   node.writeSingleCoil(295,0xA0);
   node.writeSingleCoil(296,0xA0);
   node.writeSingleCoil(297,0xA0);*/
+  // set word 0 of TX buffer to least-significant word of counter (bits 15..0)
+  //node.setTransmitBuffer(0, 9600);
+  //node.setTransmitBuffer(1, highWord(i));
+  //Serial.print("Update baud reate to 9600:" );
+  //Serial.println(node.writeMultipleRegisters(258, 1));
 
   DataOut.acudcData.msg_type=0x3a;
   DataOut.acudcData.msg_ver=0x2C;
@@ -117,6 +125,7 @@ int readAcuDC()
   DataOut.acudcData.outAh = modbusReadUint32(0x030A);
   DataOut.acudcData.inEnergy = modbusReadUint32(0x0300);
   DataOut.acudcData.outEnergy = modbusReadUint32(0x0302);
+  if( !readOk ) return(-1);
   Serial.print( "AcuDC volt: ");
   Serial.println(DataOut.acudcData.volt);
   Serial.print( "AcuDC amp: ");
