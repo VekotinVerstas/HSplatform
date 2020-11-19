@@ -101,10 +101,16 @@ void onEvent (ev_t ev) {
 
       #ifdef READ_VICTRON_ENABLED
       if( lora_response[0]=='o' && lora_response[1]=='n' ) {
-        digitalWrite(13, LOW);
+        Serial.println("Set relay ON");
+        digitalWrite(21, HIGH); //Vihrä
+        delay(50);            // wait 50ms
+        digitalWrite(21, LOW);
       }
       else if( lora_response[0]=='o' && lora_response[1]=='f'  ) {
-        digitalWrite(13, HIGH);
+        Serial.println("Set relay OFF");
+        digitalWrite(22, HIGH); // Violetti
+        delay(50);            // wait 50ms
+        digitalWrite(22, LOW);
       }
       else if( lora_response[0]=='r' ) {
         ESP.restart();

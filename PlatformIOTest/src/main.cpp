@@ -290,15 +290,15 @@ mqttsetup();
 #endif                                      //READ_WEATHER_DAVIS_8_ENABLED
 
 #ifdef READ_ACUDC
-#include "hsacudc.h"
+  #include "hsacudc.h"
   setupAcuDC();
 #endif
 #if defined(OTA_ENABLED) && defined(WIFI_REQUIRED) 
-//connect to WiFi
-bool connected = connectWifi();
-#endif     
+  //connect to WiFi
+  bool connected = connectWifi();
   hsota_setup();
-  hslora_setup();
+#endif     
+hslora_setup();
 }
 
 /********* LOOP **********/

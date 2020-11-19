@@ -18,13 +18,12 @@ int setupVictron()
 {
 #ifdef READ_VICTRON_ENABLED
     Serial1.begin(19200, SERIAL_8N1, 13, 14); //rx,tx Victron
-    pinMode(14, OUTPUT);    // sets the digital pin 14 as output ( victron load on/off )
-    //while(true){
-    digitalWrite(14, LOW); // sets the digital pin 13 off
-    //delay(10000);            // waits for a second
-    //digitalWrite(14, LOW);  // sets the digital pin 13 off
-    //delay(10000); 
-    //}
+    pinMode(21, OUTPUT);    // sets the digital pin as output ( victron load on/off )
+    pinMode(22, OUTPUT);    // sets the digital pin as output ( victron load on/off )
+    Serial.println("Set relay ON");
+    digitalWrite(21, HIGH); //Vihrä
+    delay(50);            // wait 50ms
+    digitalWrite(21, LOW);
     Serial.println("Using Serial1 for ESP to Victorn communication.");
     Serial1.setTimeout(100);
     return (0);
@@ -46,12 +45,11 @@ int readVictron()
 {
   #ifdef READ_VICTRON_ENABLED
   //The device transmits blocks of data at 1 second intervals. Each field is sent using the following format:
-  // Serial.setTimeout(); // ms default 1000
   DataOut.victronData.msg_type=read_victron;
   DataOut.victronData.msg_ver=0;
-  DataOut.victronData.mainVoltage_V = floatFromBuffer("1234");
+  //DataOut.victronData.mainVoltage_V = floatFromBuffer("1234");
   //DataOut.victronData.mainVoltage_V=12.34;
-  DataOut.victronData.panelVoltage_VPV=56.78;
+  //DataOut.victronData.panelVoltage_VPV=56.78;
   String label, val;
   while(Serial1.available()) {
        Serial1.read(); // read old buffers away
@@ -60,11 +58,13 @@ int readVictron()
   while(!Serial1.available()) { //Wait data to become available
       delay(10);
       maxdelay--;
-      if(maxdelay<1) break;
+      if(maxdelay<1) {
+        Serial.println("Timeout in Read Victron");
+        break;
+        }
       };
   while(Serial1.available()) {
         Serial.println("Read Victron:");
-       //Serial.write(Serial1.read());   // read it and send it out Serial (USB)
         label = Serial1.readStringUntil('\t');    // this is the actual line that reads the label from the MPPT controller
         val = Serial1.readStringUntil('\n');  // this is the line that reads the value of the label
 
