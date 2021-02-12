@@ -444,7 +444,7 @@ bool connected = connectWifi();
     #endif //READ__ENABLED
 
     //LMIC_setTxData2(2, STATICMSG, sizeof(STATICMSG), 0);
-    /* Serial.println("do_send");
+    Serial.println("do_send");
     do_send(&sendjob);
     Serial.println("Packet queued!");
     clear_to_sleep = false;                         // do not sleep before the message is send
