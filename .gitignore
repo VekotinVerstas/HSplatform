@@ -1,6 +1,4 @@
 .pio
-.vscode/.browse.c_cpp.db*
-.vscode/launch.json
-.vscode/ipch
+.vscode/*
 .DS_Store
 .travis.yml
