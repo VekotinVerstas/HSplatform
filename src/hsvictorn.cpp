@@ -4,7 +4,7 @@
 
 /* 
 VE.Direct pinout and spec
-TX RX communication in RS232 levels ( adapter to needed TTL level is needed )
+Victron TX RX communication in TTL 5V levels ( adapter to needed TTL 3,3V level is needed )
 ____=____
 |1 2 3 4|  ( as seen in controller )
 ---------
