@@ -60,6 +60,18 @@ int intFromBuffer(String val) {
  return( (int)strtoul(buf, NULL, 10) ); //atoi(buf);
 }
 
+uint8_t select8bitfrom16bit( uint16_t var, uint16_t bits ) {
+    uint8_t newvar=0;
+    uint8_t pos=0;
+    for(int bit=0; bit<16; bit++) {
+        if((bits >> bit) & 1) { // if this is one of the wanted bits
+            if((var >> bit) & 1) newvar|(1 << pos); // Copy vanted bit to newvar
+            pos++;
+        }
+    }
+    return(newvar);
+}
+
 int readVictron()
 {
   /* Message format: <Newline><Field-Label><Tab><Field-Value>
