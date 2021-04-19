@@ -50,6 +50,11 @@ uint16_t uint16FromBuffer(String val) {
     return((uint16_t)strtoul(buf, NULL, 10)); 
 }
 
+int16_t int16FromBuffer(String val) {
+    val.toCharArray(buf, sizeof(buf));
+    return((int16_t)strtol(buf, NULL, 10)); 
+}
+
 int32_t int32FromBuffer(String val) {
     val.toCharArray(buf, sizeof(buf));
     return((int32_t)strtol(buf, NULL, 10)); 
@@ -153,11 +158,11 @@ int readVictron()
          Serial.println(DataOut.victronData.mainVoltage_V);
      }
      else if (label =="VPV") {
-         DataOut.victronData.panelVoltage_VPV = uint16FromBuffer(val);
+         DataOut.victronData.panelVoltage_VPV = (uint16FromBuffer(val)/10);
          Serial.print("Panel voltage: ");
          Serial.print(val);
          Serial.print(" after cast: ");
-         Serial.println(DataOut.victronData.panelVoltage_VPV);
+         Serial.println(DataOut.victronData.panelVoltage_VPV*10);
      }
      else if (label =="PPV") {
          DataOut.victronData.panelPower_PPV = uint16FromBuffer(val);
@@ -167,55 +172,56 @@ int readVictron()
          Serial.println(DataOut.victronData.panelPower_PPV);
      }
      else if (label =="I") {
-         DataOut.victronData.batteryCurrent_I = floatFromBuffer(val);
+         DataOut.victronData.batteryCurrent_I = (int16FromBuffer(val)/10);
          Serial.print("Battery current: ");
          Serial.print(val);
          Serial.print(" after cast: ");
-         Serial.println(DataOut.victronData.batteryCurrent_I);
+         Serial.println(DataOut.victronData.batteryCurrent_I*10);
      }
      else if (label =="H19") {
-         DataOut.victronData.yieldTotal_H19 = floatFromBuffer(val);
+         DataOut.victronData.yieldTotal_H19 = uint16FromBuffer(val);
          Serial.print("Yield total: ");
          Serial.print(val);
          Serial.print(" after cast: ");
          Serial.println(DataOut.victronData.yieldTotal_H19);         
      }
      else if (label =="H20") {
-         DataOut.victronData.yieldToday_H20 = floatFromBuffer(val);
+         DataOut.victronData.yieldToday_H20 = uint16FromBuffer(val);
          Serial.print("Yield today: ");
          Serial.print(val);
          Serial.print(" after cast: ");
-         Serial.println(DataOut.victronData.yieldToday_H20);     }
+         Serial.println(DataOut.victronData.yieldToday_H20);
+         }
      else if (label =="H21") {
-         DataOut.victronData.maxPowerToday_H21 = floatFromBuffer(val);
+         DataOut.victronData.maxPowerToday_H21 = uint16FromBuffer(val);
          Serial.print("Max power today: ");
          Serial.print(val);
          Serial.print(" after cast: ");
          Serial.println(DataOut.victronData.maxPowerToday_H21);
      }
      else if (label =="H22") {
-         DataOut.victronData.yieldYesterday_H22 = floatFromBuffer(val);
+         DataOut.victronData.yieldYesterday_H22 = uint16FromBuffer(val);
          Serial.print("Yield yday: ");
          Serial.print(val);
          Serial.print(" after cast: ");
          Serial.println(DataOut.victronData.yieldYesterday_H22);
      }
      else if (label =="H23") {
-         DataOut.victronData.maxPowerYesterday_H23 = floatFromBuffer(val);
+         DataOut.victronData.maxPowerYesterday_H23 = uint16FromBuffer(val);
          Serial.print("Yday max power: ");
          Serial.print(val);
          Serial.print(" after cast: ");
          Serial.println(DataOut.victronData.maxPowerYesterday_H23);
      }
      else if (label =="ERR") {
-         DataOut.victronData.errorCode_ERR = intFromBuffer(val);
+         DataOut.victronData.errorCode_ERR = uint8FromBuffer(val);
          Serial.print("Error code: ");
          Serial.print(val);
          Serial.print(" after cast: ");
          Serial.println(DataOut.victronData.errorCode_ERR);
      }
      else if (label =="CS") {
-         DataOut.victronData.stateOfOperation_CS = intFromBuffer(val);
+         DataOut.victronData.stateOfOperation_CS = uint8FromBuffer(val);
          Serial.print("State of operation: ");
          Serial.print(val);
          Serial.print(" after cast: ");
@@ -275,16 +281,15 @@ int readVictron()
          Serial.println(DataOut.victronData.p_AC_OUT_S);
         }
 	    else if (label =="WARN") {
-         DataOut.victronData.p_WARN = uint8FromBuffer(val);
+         DataOut.victronData.p_WARN = select8bitfrom16bit(uint16FromBuffer(val), 0b0000111101100011);
          Serial.print("Inverter warn: ");
          Serial.print(val);
          Serial.print(" after cast: ");
          Serial.println(DataOut.victronData.p_WARN);
         }
 	    else if (label =="AR") {
-         //uint16_t 16bitval = = uint8FromBuffer(val);
          //if(16bitval & (1<<N))    
-         DataOut.victronData.p_AR = uint8FromBuffer(val);
+         DataOut.victronData.p_AR = select8bitfrom16bit(uint16FromBuffer(val), 0b0000111101100011);
          Serial.print("Inverter alarm reason: ");
          Serial.print(val);
          Serial.print(" after cast: ");

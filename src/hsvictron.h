@@ -13,14 +13,14 @@ struct t_VictronDATA {
   uint16_t mainVoltage_V;      // mV
   uint16_t panelVoltage_VPV;   // mV/10
   uint16_t panelPower_PPV;     // W
-  int32_t batteryCurrent_I;   // mA
+  int16_t batteryCurrent_I;   // mA/10
   uint16_t yieldTotal_H19;     // 0.01 kWh
   uint16_t yieldToday_H20;     // 0.01 kWh
   uint16_t maxPowerToday_H21;  // W
   uint16_t yieldYesterday_H22; // 0.01 kWh
   uint16_t maxPowerYesterday_H23; // W
-  uint16_t errorCode_ERR; //was int
-  uint16_t stateOfOperation_CS; //was int
+  uint8_t errorCode_ERR; //was int
+  uint8_t stateOfOperation_CS; //was int
 
   //Phoenix inverter
   uint16_t p_V;      // mV
