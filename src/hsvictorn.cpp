@@ -17,15 +17,18 @@ ____=____
 int setupVictron()
 {
 #ifdef READ_VICTRON_ENABLED
-    Serial1.begin(19200, SERIAL_8N1, 13, 14); //rx,tx Victron
-    pinMode(21, OUTPUT);    // sets the digital pin as output ( victron load on/off )
-    pinMode(22, OUTPUT);    // sets the digital pin as output ( victron load on/off )
+    Serial1.begin(19200, SERIAL_8N1, 13, 14); //rx,tx 
+    Serial2.begin(19200, SERIAL_8N1, 19, 21); //rx,tx 
+    pinMode(21, OUTPUT);    // sets the digital pin as output ( bistate relay load on )
+    pinMode(22, OUTPUT);    // sets the digital pin as output ( bistate relay load off )
     Serial.println("Set relay ON");
     digitalWrite(21, HIGH); //Vihrä
     delay(50);            // wait 50ms
     digitalWrite(21, LOW);
-    Serial.println("Using Serial1 for ESP to Victorn communication.");
+    Serial.println("Using Serial1 for ESP to Victorn MPPT communication.");
     Serial1.setTimeout(100);
+    Serial.println("Using Serial2 for ESP to Victorn inverter communication.");
+    Serial2.setTimeout(100);
     return (0);
 #endif
     return (-1);
@@ -43,10 +46,54 @@ int intFromBuffer(String val) {
 
 int readVictron()
 {
+  /* Message format: <Newline><Field-Label><Tab><Field-Value>
+  Fields in MPPT:
+    V: Main channel / battery mV
+    VPV: Panel voltage mV
+    PPV: Panel power W
+    I: Battery current mA
+    IL: Load current ( in small ones )
+    LOAD: Load on/off ( in small ones )
+    Relay: Relay state?
+    OR: off reason
+    H19: 0.01 kWh Yield total
+    H20: Yield today
+    H21: Max power W today
+    H22: Yield yesterday
+    H23: Max power W yesterday
+    ERR: Error code
+    FW: Firmware (16bit)
+    PID: Product id
+    SER#:  Serialnumber
+
+  Fields in Phoenix Inverter:
+    V: Main channel / battery V in mV
+    Relay: Relay state?
+    OR: off reason
+    CS:  State of operation
+    FW: Firmware (16bit)
+    PID: Product id
+    SER#:  Serialnumber
+    MODE: Device mode
+    AC_OUT_V: AC output voltage 0.01 V
+    AC_OUT_I: AC output current 0.1 A
+    AC_OUT_S: AC output apparent power VA (in some models )
+    WARN: Warning reason ( can be multible  ) send out as 8bit
+        Low voltage 1 -> 1
+        High voltage 2 -> 2
+        Low temo 32 -> 4
+        High temp 64 -> 8
+        Overload 256 -> 16
+        DC-ripple 512 -> 32
+        Low V AC out 1024 -> 64
+        High V AC out 2048 -> 128
+  */
+
+  int sensorStatus = 0;
   #ifdef READ_VICTRON_ENABLED
   //The device transmits blocks of data at 1 second intervals. Each field is sent using the following format:
   DataOut.victronData.msg_type=read_victron;
-  DataOut.victronData.msg_ver=0;
+  DataOut.victronData.msg_ver=1;
   //DataOut.victronData.mainVoltage_V = floatFromBuffer("1234");
   //DataOut.victronData.mainVoltage_V=12.34;
   //DataOut.victronData.panelVoltage_VPV=56.78;
@@ -59,12 +106,14 @@ int readVictron()
       delay(10);
       maxdelay--;
       if(maxdelay<1) {
-        Serial.println("Timeout in Read Victron");
+        Serial.println("Timeout in Read MPPT Victron");
+        sensorStatus=1;
         break;
         }
       };
+
   while(Serial1.available()) {
-        Serial.println("Read Victron:");
+        Serial.println("Read Victron MPPT:");
         label = Serial1.readStringUntil('\t');    // this is the actual line that reads the label from the MPPT controller
         val = Serial1.readStringUntil('\n');  // this is the line that reads the value of the label
 
@@ -125,8 +174,33 @@ int readVictron()
          Serial.print("State of operation: ");
          Serial.println(val);
      }
+  }
 
+  while(Serial2.available()) {
+       Serial2.read(); // read old buffers away
    }
+
+  while(!Serial2.available()) { //Wait data to become available
+      delay(10);
+      maxdelay--;
+      if(maxdelay<1) {
+        Serial.println("Timeout in Read inverter Victron");
+        if( sensorStatus==1) sensorStatus=3; // Both reads faild
+        else sensorStatus=2; // only inverter read fail
+        break;
+        }
+      };
+
+  while(Serial2.available()) {
+        Serial.println("Read Victron inverter:");
+        label = Serial2.readStringUntil('\t');    // this is the actual line that reads the label from the MPPT controller
+        val = Serial2.readStringUntil('\n');  // this is the line that reads the value of the label
+        Serial.print(label);
+        Serial.print(": ");
+        Serial.print(val);
+   }
+
    #endif
-   return(0);
+   
+   return(sensorStatus);
 }
