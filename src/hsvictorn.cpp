@@ -18,7 +18,7 @@ int setupVictron()
 {
 #ifdef READ_VICTRON_ENABLED
     Serial1.begin(19200, SERIAL_8N1, 13, 14); //rx,tx 
-    Serial2.begin(19200, SERIAL_8N1, 19, 21); //rx,tx 
+    Serial2.begin(19200, SERIAL_8N1, 19, 21); //rx,tx
     pinMode(21, OUTPUT);    // sets the digital pin as output ( bistate relay load on )
     pinMode(22, OUTPUT);    // sets the digital pin as output ( bistate relay load off )
     Serial.println("Set relay ON");
@@ -33,15 +33,31 @@ int setupVictron()
 #endif
     return (-1);
 }
-char buf[80];
+char buf[16];
 
 float floatFromBuffer(String val) {
  val.toCharArray(buf, sizeof(buf));
- return atof(buf);
+ return strtof(buf, NULL); //atof(buf);
 }
+
+uint8_t uint8FromBuffer(String val) {
+    val.toCharArray(buf, sizeof(buf));
+    return((uint8_t)strtoul(buf, NULL, 10)); 
+}
+
+uint16_t uint16FromBuffer(String val) {
+    val.toCharArray(buf, sizeof(buf));
+    return((uint16_t)strtoul(buf, NULL, 10)); 
+}
+
+int32_t int32FromBuffer(String val) {
+    val.toCharArray(buf, sizeof(buf));
+    return((int32_t)strtol(buf, NULL, 10)); 
+}
+
 int intFromBuffer(String val) {
  val.toCharArray(buf, sizeof(buf));
- return atoi(buf);
+ return( (int)strtoul(buf, NULL, 10) ); //atoi(buf);
 }
 
 int readVictron()
@@ -93,7 +109,7 @@ int readVictron()
   #ifdef READ_VICTRON_ENABLED
   //The device transmits blocks of data at 1 second intervals. Each field is sent using the following format:
   DataOut.victronData.msg_type=read_victron;
-  DataOut.victronData.msg_ver=1;
+  DataOut.victronData.msg_ver=2;
   //DataOut.victronData.mainVoltage_V = floatFromBuffer("1234");
   //DataOut.victronData.mainVoltage_V=12.34;
   //DataOut.victronData.panelVoltage_VPV=56.78;
@@ -101,7 +117,7 @@ int readVictron()
   while(Serial1.available()) {
        Serial1.read(); // read old buffers away
    }
-  int maxdelay=100;
+  int maxdelay=200;
   while(!Serial1.available()) { //Wait data to become available
       delay(10);
       maxdelay--;
@@ -118,61 +134,80 @@ int readVictron()
         val = Serial1.readStringUntil('\n');  // this is the line that reads the value of the label
 
      if (label =="V") {
-         DataOut.victronData.mainVoltage_V = floatFromBuffer(val);
+         DataOut.victronData.mainVoltage_V = uint16FromBuffer(val);
          Serial.print("Main voltage: ");
          Serial.print(val);
-         Serial.print(" float: ");
+         Serial.print(" after cast: ");
          Serial.println(DataOut.victronData.mainVoltage_V);
      }
      else if (label =="VPV") {
-         DataOut.victronData.panelVoltage_VPV = floatFromBuffer(val);
+         DataOut.victronData.panelVoltage_VPV = uint16FromBuffer(val);
          Serial.print("Panel voltage: ");
-         Serial.println(val);
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.panelVoltage_VPV);
      }
      else if (label =="PPV") {
-         DataOut.victronData.panelPower_PPV = floatFromBuffer(val);
+         DataOut.victronData.panelPower_PPV = uint16FromBuffer(val);
          Serial.print("Panael power: ");
-         Serial.println(val);
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.panelPower_PPV);
      }
      else if (label =="I") {
          DataOut.victronData.batteryCurrent_I = floatFromBuffer(val);
          Serial.print("Battery current: ");
-         Serial.println(val);
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.batteryCurrent_I);
      }
      else if (label =="H19") {
          DataOut.victronData.yieldTotal_H19 = floatFromBuffer(val);
          Serial.print("Yield total: ");
-         Serial.println(val);
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.yieldTotal_H19);         
      }
      else if (label =="H20") {
          DataOut.victronData.yieldToday_H20 = floatFromBuffer(val);
          Serial.print("Yield today: ");
-         Serial.println(val);
-     }
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.yieldToday_H20);     }
      else if (label =="H21") {
          DataOut.victronData.maxPowerToday_H21 = floatFromBuffer(val);
          Serial.print("Max power today: ");
-         Serial.println(val);
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.maxPowerToday_H21);
      }
      else if (label =="H22") {
          DataOut.victronData.yieldYesterday_H22 = floatFromBuffer(val);
          Serial.print("Yield yday: ");
-         Serial.println(val);
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.yieldYesterday_H22);
      }
      else if (label =="H23") {
          DataOut.victronData.maxPowerYesterday_H23 = floatFromBuffer(val);
          Serial.print("Yday max power: ");
-         Serial.println(val);
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.maxPowerYesterday_H23);
      }
      else if (label =="ERR") {
          DataOut.victronData.errorCode_ERR = intFromBuffer(val);
          Serial.print("Error code: ");
-         Serial.println(val);
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.errorCode_ERR);
      }
      else if (label =="CS") {
          DataOut.victronData.stateOfOperation_CS = intFromBuffer(val);
          Serial.print("State of operation: ");
-         Serial.println(val);
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.stateOfOperation_CS );
      }
   }
 
@@ -180,6 +215,7 @@ int readVictron()
        Serial2.read(); // read old buffers away
    }
 
+  maxdelay=200;
   while(!Serial2.available()) { //Wait data to become available
       delay(10);
       maxdelay--;
@@ -193,11 +229,69 @@ int readVictron()
 
   while(Serial2.available()) {
         Serial.println("Read Victron inverter:");
-        label = Serial2.readStringUntil('\t');    // this is the actual line that reads the label from the MPPT controller
-        val = Serial2.readStringUntil('\n');  // this is the line that reads the value of the label
+        label = Serial2.readStringUntil('\t'); // read the label
+        val = Serial2.readStringUntil('\n');   // read the value of the label
         Serial.print(label);
         Serial.print(": ");
         Serial.print(val);
+        if (label =="V") { 
+         DataOut.victronData.p_V = uint16FromBuffer(val);
+         Serial.print("Inverter main voltage: ");
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.p_V);
+        }
+	    else if (label =="AC_OUT_V") {
+         DataOut.victronData.p_AC_OUT_V = uint16FromBuffer(val);
+         Serial.print("Inverter AC out voltage: ");
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.p_AC_OUT_V);
+        }
+	    else if (label =="AC_OUT_I") {
+         DataOut.victronData.p_AC_OUT_I = uint8FromBuffer(val);
+         Serial.print("Inverter AC out curret: ");
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.p_AC_OUT_I);
+        }
+	    else if (label =="AC_OUT_S") {
+         DataOut.victronData.p_AC_OUT_S = uint16FromBuffer(val);
+         Serial.print("Inverter AC out power: ");
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.p_AC_OUT_S);
+        }
+	    else if (label =="WARN") {
+         DataOut.victronData.p_WARN = uint8FromBuffer(val);
+         Serial.print("Inverter warn: ");
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.p_WARN);
+        }
+	    else if (label =="AR") {
+         //uint16_t 16bitval = = uint8FromBuffer(val);
+         //if(16bitval & (1<<N))    
+         DataOut.victronData.p_AR = uint8FromBuffer(val);
+         Serial.print("Inverter alarm reason: ");
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.p_AR);
+        }
+	    else if (label =="CS") {
+         DataOut.victronData.p_CS = uint8FromBuffer(val);
+         Serial.print("Inverter state of operation: ");
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.p_CS);
+        }
+	    else if (label =="MODE") {
+         DataOut.victronData.p_AC_OUT_I = uint8FromBuffer(val);
+         Serial.print("Inverter mode: ");
+         Serial.print(val);
+         Serial.print(" after cast: ");
+         Serial.println(DataOut.victronData.p_AC_OUT_I);
+        }
    }
 
    #endif

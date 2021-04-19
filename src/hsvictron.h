@@ -7,21 +7,30 @@ int readVictron();
 
 #ifdef READ_VICTRON_ENABLED
 struct t_VictronDATA { 
+  //MPPT
   uint8_t msg_type;
-  int8_t msg_ver;
-  //int16_t batteryVoltageRaw;
-  //int16_t panelVoltageRaw;
-  float mainVoltage_V;      // mV
-  float panelVoltage_VPV;   // mV
-  float panelPower_PPV;     // W
-  float batteryCurrent_I;   // mA
-  float yieldTotal_H19;     // 0.01 kWh
-  float yieldToday_H20;     // 0.01 kWh
-  float maxPowerToday_H21;  // W
-  float yieldYesterday_H22; // 0.01 kWh
-  float maxPowerYesterday_H23; // W
-  int errorCode_ERR;
-  int stateOfOperation_CS;
+  uint8_t msg_ver;
+  uint16_t mainVoltage_V;      // mV
+  uint16_t panelVoltage_VPV;   // mV/10
+  uint16_t panelPower_PPV;     // W
+  int32_t batteryCurrent_I;   // mA
+  uint16_t yieldTotal_H19;     // 0.01 kWh
+  uint16_t yieldToday_H20;     // 0.01 kWh
+  uint16_t maxPowerToday_H21;  // W
+  uint16_t yieldYesterday_H22; // 0.01 kWh
+  uint16_t maxPowerYesterday_H23; // W
+  uint16_t errorCode_ERR; //was int
+  uint16_t stateOfOperation_CS; //was int
+
+  //Phoenix inverter
+  uint16_t p_V;      // mV
+  uint16_t p_AC_OUT_V;
+  uint16_t p_AC_OUT_S;
+  uint8_t p_AC_OUT_I;
+  uint8_t p_WARN; // Same as ar but for now can be multiple bits
+  uint8_t p_AR; // alarm convert to 8 bit
+  uint8_t p_CS; // convert to 8 bit
+  uint8_t p_MODE; 
 };
 
 #endif //READ_VICTORN_ENABLED
