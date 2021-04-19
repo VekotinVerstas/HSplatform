@@ -404,13 +404,14 @@ bool connected = connectWifi();
     }
     else
     {
+    int sensorReadStatus=0;
     // Prepare upstream data transmission at the next possible time.
     #ifdef READ_WEATHER_DAVIS_8_ENABLED
       readDavis();
       //LMIC_setTxData2(2, (unsigned char *)&LoraOut, sizeof(LoraOut), 0);
     #endif //READ_WEATHER_DAVIS_8_ENABLED
     #ifdef READ_VICTRON_ENABLED
-      readVictron();
+      sensorReadStatus = readVictron();
       //LMIC_svicetTxData2(2, (unsigned char *)&LoraOut, sizeof(LoraOut), 0);
     #endif //READ__ENABLED
     #ifdef READ_EXTERNAL_VOLTAGE_9_ENABLED
@@ -444,10 +445,15 @@ bool connected = connectWifi();
     #endif //READ__ENABLED
 
     //LMIC_setTxData2(2, STATICMSG, sizeof(STATICMSG), 0);
+    if(sensorReadStatus > 2) {
+    Serial.println("Sensor read fail. Skip lora send.");
+    } 
+    else {
     Serial.println("do_send");
     do_send(&sendjob);
     Serial.println("Packet queued!");
     clear_to_sleep = false;                         // do not sleep before the message is send
+    }
     //next_run_time[task::send_data_lora] = LONG_MAX; // unschedule for now ( not to repeat send )
     /* EV_TXCOMPLETE in hslora shedules next task, but if TX fails shedule it also in here */
     Serial.printf("Backup shedule next LoRa send in %d seconds\r\n", TX_INTERVAL);
