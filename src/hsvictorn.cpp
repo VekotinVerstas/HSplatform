@@ -149,6 +149,9 @@ int readVictron()
         Serial.println("Read Victron MPPT:");
         label = Serial1.readStringUntil('\t');    // this is the actual line that reads the label from the MPPT controller
         val = Serial1.readStringUntil('\n');  // this is the line that reads the value of the label
+        Serial.print(label);
+        Serial.print(": ");
+        Serial.print(val);
 
      if (label =="V") {
          DataOut.victronData.mainVoltage_V = uint16FromBuffer(val);
