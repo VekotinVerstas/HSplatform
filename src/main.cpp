@@ -255,7 +255,7 @@ time_t time_of_earliest_run() // loop all tasks and return earliest run time
 /********** SETUP **********/
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(19200);//115200 Other UARTS 1-2 seem to follow this even they have own sett  ings 
   delay(20);
   Serial.printf("\r\n%s - versio: %s %s\r\n", name, version, __DATE__);
   Serial.print("bootCount:");
