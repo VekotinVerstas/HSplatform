@@ -144,7 +144,7 @@ int readVictron()
       delay(10);
       maxdelay--;
       if(maxdelay<1) {
-        Serial.println("Timeout in Read MPPT Victron");
+        Serial.println("Timeout in Read Victron MPPT");
         sensorStatus=1;
         break;
         }
