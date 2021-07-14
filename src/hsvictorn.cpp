@@ -139,7 +139,7 @@ int readVictron()
   while(MPPT.available()) {
        Serial.print(MPPT.read()); // read old buffers away
    }
-  int maxdelay=100;
+  int maxdelay=200;
   while(!MPPT.available()) { //Wait data to become available
       delay(10);
       maxdelay--;
@@ -150,9 +150,11 @@ int readVictron()
         }
       };
 
-  Serial.println("Read Victron MPPT");
-  MPPT.read(); // Read start linefeed away
-  delay(10);
+delay(50);
+  if(sensorStatus<1) {
+    Serial.println("Read Victron MPPT");
+    MPPT.read(); // Read start linefeed away
+    delay(10);
   while(MPPT.available()) {    
     Serial.flush();
     label = MPPT.readStringUntil('\t');    // this is the actual line that reads the label from the MPPT controller
@@ -219,12 +221,12 @@ int readVictron()
      }
     delay(5);
   }
-
+  }
   while(Phoenix.available()) {
        Phoenix.read(); // read old buffers away
    }
 
-  maxdelay=100;
+  maxdelay=200;
   while(!Phoenix.available()) { //Wait data to become available
       delay(10);
       maxdelay--;
@@ -235,7 +237,9 @@ int readVictron()
         break;
         }
       };
+delay(50);
 
+if(sensorStatus<2) {
   Serial.println("Read Phoenix inverter:");
   Phoenix.read(); // Read start linefeed away
   while(Phoenix.available()) {
@@ -287,7 +291,7 @@ int readVictron()
          Serial.println(DataOut.victronData.p_AC_OUT_I);
         }
    }
-
+  }
    #endif
    
    return(sensorStatus);
