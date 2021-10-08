@@ -297,7 +297,7 @@ int readVictron()
             }
             else if (label == "AC_OUT_I")
             {
-                DataOut.victronData.p_AC_OUT_I = uint8FromBuffer(val);
+                DataOut.victronData.p_AC_OUT_I = uint8FromBuffer(val)+5; //For some reaswon this inverter seems to be at -5 at 0A
                 Serial.print("Inverter AC out curret: ");
                 Serial.println(DataOut.victronData.p_AC_OUT_I);
             }
