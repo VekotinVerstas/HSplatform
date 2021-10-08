@@ -100,6 +100,7 @@ void onEvent (ev_t ev) {
       LMIC.dataLen = 0;
 
       #ifdef READ_VICTRON_ENABLED
+      /*
       if( lora_response[0]=='o' && lora_response[1]=='n' ) {
         Serial.println("Set relay ON");
         digitalWrite(21, HIGH); //Vihrä
@@ -112,10 +113,12 @@ void onEvent (ev_t ev) {
         delay(50);            // wait 50ms
         digitalWrite(22, LOW);
       }
-      else if( lora_response[0]=='r' ) {
+      */
+      #endif
+      if( lora_response[0]=='r' ) {
         ESP.restart();
       }
-      #endif
+      
       }
       // Schedule next transmission
       Serial.printf("Next LoRa send in %d seconds\n", TX_INTERVAL);
