@@ -20,14 +20,8 @@ ____=____
 int setupVictron()
 {
 #ifdef READ_VICTRON_ENABLED
-    MPPT.begin(19200, SERIAL_8N1, 13, 14);    //rx,tx
-    Phoenix.begin(19200, SERIAL_8N1, 34, 21); //rx,tx
-    pinMode(21, OUTPUT);                      // sets the digital pin as output ( bistate relay load on )
-    pinMode(22, OUTPUT);                      // sets the digital pin as output ( bistate relay load off )
-    Serial.println("Set relay ON");
-    digitalWrite(21, HIGH); //Vihrä
-    delay(50);              // wait 50ms
-    digitalWrite(21, LOW);
+    MPPT.begin(19200, SERIAL_8N1, 34, 15);    //rx,tx13 14
+    Phoenix.begin(19200, SERIAL_8N1, 13, 14); //rx,tx34 15
     Serial.println("Using Serial1 for ESP to Victorn MPPT communication.");
     MPPT.setTimeout(100);
     Serial.println("Using Serial2 for ESP to Victorn inverter communication.");
