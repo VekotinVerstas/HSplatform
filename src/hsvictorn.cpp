@@ -282,6 +282,7 @@ int readVictron()
             Serial.print(label);
             Serial.print(": ");
             Serial.print(val);
+            Serial.flush();
             if (label == "V")
             {
                 DataOut.victronData.p_V = uint16FromBuffer(val);
@@ -331,6 +332,8 @@ int readVictron()
                 Serial.print("Inverter mode: ");
                 Serial.println(DataOut.victronData.p_AC_OUT_I);
             }
+           Serial.flush();
+           if(!Phoenix.available()) delay(150); // Buffer seems to dry out sometimes
         }
     }
 #endif
